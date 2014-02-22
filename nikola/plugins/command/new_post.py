@@ -100,5 +100,7 @@ class CommandNewPost(Command):
 
     def _execute(self, options, args):
         """Create a new post or page."""
-        p = self.site.plugin_manager.getPluginByName('new', 'Command')
-        p.execute(options, args)
+        p = self.site.plugin_manager.getPluginByName('new', 'Command').plugin_object
+        is_page = options.get('is_page', False)
+        content_type = ['page'] if is_page else ['post']
+        p.execute(options, content_type + args)

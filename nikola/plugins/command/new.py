@@ -124,17 +124,9 @@ class CommandNew(Command):
     """Create a new item."""
 
     name = "new"
-    doc_usage = "[options] [path]"
+    doc_usage = "[options] (post|page) [path]"
     doc_purpose = "create a new blog post or site page"
     cmd_options = [
-        {
-            'name': 'is_page',
-            'short': 'p',
-            'long': 'page',
-            'type': bool,
-            'default': False,
-            'help': 'Create a page instead of a blog post.'
-        },
         {
             'name': 'title',
             'short': 't',
@@ -189,16 +181,20 @@ class CommandNew(Command):
                           self.site.plugin_manager.getPluginsOfCategory(
                               "PageCompiler")]
 
-        if len(args) > 1:
+        if len(args) == 2:
+            # post/page, path
+            path = args[1]
+        elif len(args) == 1:
+            # post/page
+            path = None
+        else:
+            # none || too many
             print(self.help())
             return False
-        elif args:
-            path = args[0]
-        else:
-            path = None
 
-        is_page = options.get('is_page', False)
+        is_page = args[0] == 'page'
         is_post = not is_page
+        content_type = 'page' if is_page else 'post'
         title = options['title'] or None
         tags = options['tags']
         onefile = options['onefile']
@@ -228,8 +224,11 @@ class CommandNew(Command):
                                   self.site.config['COMPILERS'],
                                   self.site.config['post_pages'])
 
-        print("Creating New Post")
-        print("-----------------\n")
+        # Create a nice underscore for the creation message
+        underscore = '-' * len(content_type)
+
+        print("Creating New {0}".format(content_type.title()))
+        print("-------------{0}\n".format(underscore))
         if title is None:
             print("Enter title: ", end='')
             # WHY, PYTHON3???? WHY?
@@ -282,9 +281,9 @@ class CommandNew(Command):
             with codecs.open(meta_path, "wb+", "utf8") as fd:
                 fd.write('\n'.join(data))
             with codecs.open(txt_path, "wb+", "utf8") as fd:
-                fd.write("Write your post here.")
-            LOGGER.info("Your post's metadata is at: {0}".format(meta_path))
+                fd.write("Write your {0} here.".format(content_type))
+            LOGGER.info("Your {0}'s metadata is at: {1}".format(content_type, meta_path))
             event['meta_path'] = meta_path
-        LOGGER.info("Your post's text is at: {0}".format(txt_path))
+        LOGGER.info("Your {0}'s text is at: {1}".format(content_type, txt_path))
 
         signal('new_post').send(self, **event)
